@@ -43,6 +43,13 @@
 #endif /* XINERAMA */
 #include <X11/Xft/Xft.h>
 
+#include <X11/Xlib-xcb.h>
+#include <xcb/res.h>
+#ifdef __OpenBSD__
+#include <sys/sysctl.h>
+#include <kvm.h>
+#endif /* __OpenBSD */
+
 #include "drw.h"
 #include "util.h"
 
@@ -309,6 +316,7 @@ static Display *dpy;
 static Drw *drw;
 static Monitor *mons, *selmon;
 static Window root, wmcheckwin;
+static xcb_connection_t *xcon;
 
 /* configuration, allows nested code to access above variables */
 #include "config.h"
@@ -2445,12 +2453,14 @@ main(int argc, char *argv[])
 		fputs("warning: no locale support\n", stderr);
 	if (!(dpy = XOpenDisplay(NULL)))
 		die("dwm: cannot open display");
+  if (!(xcon = XGetXCBConnection(dpy)))
+    die("dwm: cannot get xcb connection\n");
 	checkotherwm();
         XrmInitialize();
         loadxrdb();
 	setup();
 #ifdef __OpenBSD__
-	if (pledge("stdio rpath proc exec", NULL) == -1)
+	if (pledge("stdio rpath proc exec ps", NULL) == -1)
 		die("pledge");
 #endif /* __OpenBSD__ */
 	scan();
